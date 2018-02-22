@@ -27,28 +27,22 @@ namespace AI_LAB1
 
         StreamWriter w = new StreamWriter("log.txt");
 
+        int maxCountState = 4;
         List<int> ideal = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        bool isLeft;
-        bool isTop;
-        bool isDoubleTop;
-        bool isDoubleLeft;
-        List<int> numbers = new List<int> { 1,2,5,4,3,6,8,7,9};
+        List<int> numbers = new List<int> {1,2,3,7,4,5,8,9,6};
+        int count = 0;
         public MainWindow()
         {
             InitializeComponent();
-            isLeft = true;
-            isTop = true;
-            isDoubleTop = true;
-            isDoubleLeft = true;
 
             UIElementCollection quads = Field.Children;
             List<int>.Enumerator en = numbers.GetEnumerator();
             foreach (UIElement e in quads)
             {
-                if (e.GetType().ToString().Contains("TextBlock"))
+                if (e is TextBlock)
                 {
                     en.MoveNext();
-                    ((TextBlock)e).Text = en.Current.ToString();
+                    (e as TextBlock).Text = en.Current.ToString();
                    
                 }
             }
@@ -62,62 +56,61 @@ namespace AI_LAB1
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
+            Stack<Node> O = new Stack<Node>();
+            O.Push(new Node(numbers));
+            w.WriteLine("Open Node has been added. Field:"+O.Peek().FieldToString()+". State: "+O.Peek().State.ToString()+"\n\n");
+            List<Node> C = new List<Node>();
 
-            System.Diagnostics.Stopwatch sw = new Stopwatch();
-            sw.Start();
-            Debug.WriteLine("Begin Search");
-            Stack<Node> nodes = new Stack<Node>();
-            nodes.Push(new Node(numbers));
-            w.WriteLine(">>> Node has been added:{0}. State:{1}",nodes.Peek().FieldToString(),nodes.Peek().State );
-            while(!nodes.Peek().isVictory())
+            while(O.Count !=0)
             {
-                
-                if (rotate(nodes.Peek().State))
+                Node x = O.Pop();
+                if (x.Equals(new Node(ideal)))
                 {
-                    nodes.Push(new Node(numbers));
-                    w.WriteLine(">>> Node has been added:{0}. State:{1}", nodes.Peek().FieldToString(),nodes.Peek().State);
-
-                    int iter = 0;
-                    foreach (Node n in nodes)
+                    C.Add(x);
+                    break;
+                }
+                if (C.Contains(x))
+                {
+                    x.Parent.CountOfChild -= 1;
+                    if (x.Parent.CountOfChild == 0)
                     {
-
-                        if (n.Field.SequenceEqual(nodes.Peek().Field) && iter != 0)
-                        {
-                            w.WriteLine(">>> Node has been remove:{0}", nodes.Peek().FieldToString(),nodes.Peek().State);
-                            nodes.Pop();
-                            nodes.Peek().State += 1;
-                            numbers = new List<int>(nodes.Peek().Field);
-                            break;
-                        }
-                        iter++;
+                        C.Remove(x.Parent);
                     }
+                    continue;
                 }
-                else
+ 
+                C.Add(x);
+                List<int> temp;
+                count++;
+                w.WriteLine("Parent. Field: " + x.FieldToString() + ". State: " + x.State.ToString() + "\n");
+                for (int i=0;x.rotate(i+1,out temp);i++)
                 {
-                    w.WriteLine(">>> Node has been remove:{0}", nodes.Peek().FieldToString(), nodes.Peek().State);
-                    nodes.Pop();
-                    nodes.Peek().State += 1;
-                    numbers = new List<int>(nodes.Peek().Field);
+                    
+                    Node node = new Node(temp, i + 1);
+                    node.Parent = x;
+                    node.Parent.CountOfChild += 1;
+                    if (!O.Contains(node) && !C.Contains(node))
+                    {
+                        O.Push(node);
+                        
+                        w.WriteLine("Open Node has been added. Field: " + O.Peek().FieldToString() + ". State: " + O.Peek().State.ToString());
+                    }
+                    else
+                    {
+                        ;
+                    }
+                    
+                   w.WriteLine();
+
                 }
-                
+                /*if (count == 20)
+                    return;*/
             }
-            sw.Stop();
-            Debug.WriteLine("End search");
-            MessageBox.Show("Поиск завершен");
-            MessageBox.Show("Кол-во вершин: " + nodes.Count);
-            MessageBox.Show("Время исполнения: "+sw.ElapsedMilliseconds);
-            String path = "";
-            foreach(Node n in nodes)
-            {
-                path += n.State + " ";
-            }
-            w.WriteLine(path);
-            w.Close();
         }
 
         private bool rotate(int number)
         {
-            List<TextBlock> elements = new List<TextBlock>();
+            Dictionary<int, int> values = new Dictionary<int, int>();
             switch(number)
             {
                 default:
@@ -126,44 +119,60 @@ namespace AI_LAB1
                     }
                 case 1:
                     {
-                        elements.AddRange(new TextBlock[] { q1, q2, q4, q5 });
-                    }break;
+                        values.Add(0, numbers[0]);
+                        values.Add(1, numbers[1]);
+                        values.Add(3, numbers[3]);
+                        values.Add(4, numbers[4]);
+
+                        numbers[0] = values[1];
+                        numbers[3] = values[0];
+                        numbers[4] = values[3];
+                        numbers[1] = values[4];
+                    }
+                    break;
                 case 2:
                     {
-                        elements.AddRange(new TextBlock[] { q2, q3, q5, q6 });
+                        values.Add(1, numbers[1]);
+                        values.Add(2, numbers[2]);
+                        values.Add(4, numbers[4]);
+                        values.Add(5, numbers[5]);
+
+                        numbers[1] = values[2];
+                        numbers[4] = values[1];
+                        numbers[5] = values[4];
+                        numbers[2] = values[5];
                     }
                     break;
                 case 3:
                     {
-                        elements.AddRange(new TextBlock[] { q4, q5, q7, q8 });
+                        values.Add(3, numbers[3]);
+                        values.Add(4, numbers[4]);
+                        values.Add(6, numbers[6]);
+                        values.Add(7, numbers[7]);
+
+                        numbers[3] = values[4];
+                        numbers[6] = values[3];
+                        numbers[7] = values[6];
+                        numbers[4] = values[7];
                     }
                     break;
                 case 4:
                     {
-                        elements.AddRange(new TextBlock[] { q5, q6, q8, q9 });
+                        values.Add(4, numbers[4]);
+                        values.Add(5, numbers[5]);
+                        values.Add(7, numbers[7]);
+                        values.Add(8, numbers[8]);
+
+                        numbers[4] = values[5];
+                        numbers[7] = values[4];
+                        numbers[8] = values[7];
+                        numbers[5] = values[8];
                     }
                     break;
             }
-            String firstElementText = elements[0].Text;
-            String secondElementText = elements[1].Text;
-            String thirdElementText = elements[2].Text;
-            String fourthElementText = elements[3].Text;
-
-            elements[0].Text = secondElementText;
-            elements[1].Text = fourthElementText;
-            elements[2].Text = firstElementText;
-            elements[3].Text = thirdElementText;
-
-            numbers.Clear();
-            foreach (UIElement el in Field.Children)
-            {
-                if (el.GetType().ToString().Contains("TextBlock"))
-                {
-                    int temp = Int32.Parse(((TextBlock)el).Text);
-                    numbers.Add(temp);
-                }
-            }
+            Confirm();
             return true;
+
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -192,7 +201,19 @@ namespace AI_LAB1
         private void MenuItem_Click_1(object sender, RoutedEventArgs e)
         {
             w.Close();
-            System.Diagnostics.Process.Start("code", "log.txt");
+            System.Diagnostics.Process.Start("notepad", "log.txt");
+        }
+        private void Confirm()
+        {
+            List<int>.Enumerator e = numbers.GetEnumerator();
+            foreach(UIElement ui in Field.Children)
+            {
+                if(ui is TextBlock)
+                {
+                    e.MoveNext();
+                    (ui as TextBlock).Text = e.Current.ToString();
+                }
+            }
         }
     }
 }
